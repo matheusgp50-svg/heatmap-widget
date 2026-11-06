@@ -71,7 +71,7 @@ export function createStore(filePath) {
 
   function save(next) {
     const temp = `${filePath}.tmp`;
-    writeFileSync(temp, JSON.stringify(next, null, 2));
+    writeFileSync(temp, JSON.stringify(next, null, 2), { flush: true });
     replaceFile(temp, filePath);
     data = next;
   }

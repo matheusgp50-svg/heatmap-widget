@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import electronPath from 'electron';
 import { formatDayLabel, toDateKey } from '../../src/shared/calendar.js';
 import { expectAttr, launchApp, seedOne, waitFor, widgetPage } from './helpers.js';
 
@@ -86,8 +91,44 @@ test('dados corrompidos abrem vazio e guardam backup', async () => {
     () => readdirSync(t.dataDir).some((name) => /^data\.corrupt-\d+\.json$/.test(name)),
     'backup',
   );
+  await waitFor(() => existsSync(join(t.dataDir, 'data.json')), 'arquivo novo');
   assert.deepEqual(t.readData().heatmaps, []);
   await t.close();
+});
+
+test('o widget não sai da própria página', async () => {
+  const t = await launchApp(seedOne());
+  const page = await widgetPage(t.app);
+  await page.evaluate(() => { location.href = new URL('widget.css', location.href).href; }); // o mesmo que soltar um arquivo
+  await new Promise((done) => { setTimeout(done, 500); });
+  assert.match(page.url(), /widget\.html/);
+  await t.close();
+});
+
+test('mudança de monitores recoloca os widgets', async () => {
+  const t = await launchApp(seedOne({ position: { x: 200, y: 120 } }));
+  await widgetPage(t.app);
+  const windowId = () => t.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.id);
+  const before = await windowId();
+  await t.app.evaluate(({ screen }) => screen.emit('display-removed'));
+  await waitFor(async () => {
+    const id = await windowId();
+    return id !== undefined && id !== before;
+  }, 'widget recolocado');
+  await t.close();
+});
+
+test('falha ao iniciar encerra o app em vez de ficar invisível', async () => {
+  const dataDir = mkdtempSync(join(tmpdir(), 'heatmap-e2e-'));
+  mkdirSync(join(dataDir, 'data.json')); // faz a leitura falhar
+  const env = { ...process.env, HEATMAP_DATA_DIR: dataDir };
+  delete env.ELECTRON_RUN_AS_NODE;
+  const app = spawn(electronPath, ['.'], { env, stdio: 'ignore' });
+  const timer = setTimeout(() => app.kill(), 15000);
+  const [code] = await once(app, 'exit');
+  clearTimeout(timer);
+  assert.equal(code, 1);
+  rmSync(dataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 });
 
 test('widget destruído por fora é reaberto', async () => {

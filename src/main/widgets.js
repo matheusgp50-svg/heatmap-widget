@@ -3,17 +3,27 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pinToDesktop } from './desktop-pin.js';
 import { WIDGET_SIZE, resolvePosition } from './placement.js';
+import { retryUntilOk } from './retry.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const WIDGET_PAGE = join(here, '..', 'renderer', 'widget', 'widget.html');
 const MANAGER_PAGE = join(here, '..', 'renderer', 'manager', 'manager.html');
 const MANAGER_SIZE = { width: 520, height: 520 };
 const REOPEN_DELAY_MS = 3000;
+const REPLACE_DELAY_MS = 1000;
+const PIN_RETRY = { times: 6, delayMs: 2000 };
+
+// Soltar um arquivo sobre a janela trocaria a página do app pelo arquivo.
+function keepPage(win) {
+  win.webContents.on('will-navigate', (event) => event.preventDefault());
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+}
 
 export function createWidgets({ store, preloadPath, warn }) {
   const windows = new Map();
   let manager = null;
   let closeAllowed = false;
+  let replaceTimer = null;
 
   const webPreferences = { preload: preloadPath, contextIsolation: true, nodeIntegration: false };
 
@@ -53,9 +63,11 @@ export function createWidgets({ store, preloadPath, warn }) {
     windows.set(heatmap.id, win);
     win.loadFile(WIDGET_PAGE, { query: { id: heatmap.id } });
 
-    win.once('ready-to-show', () => {
+    keepPage(win);
+    win.once('ready-to-show', async () => {
       win.show();
-      const { ok } = pinToDesktop(win);
+      // Depois de reiniciar, o Explorer leva alguns segundos para recriar a camada dos ícones.
+      const { ok } = await retryUntilOk(() => (win.isDestroyed() ? { ok: true } : pinToDesktop(win)), PIN_RETRY);
       if (!ok) warn('Não foi possível fixar o widget no fundo.');
     });
     win.on('moved', () => savePosition(heatmap.id, win));
@@ -75,6 +87,26 @@ export function createWidgets({ store, preloadPath, warn }) {
     const heatmap = store.get(id);
     if (heatmap && !closeAllowed && !windows.has(id)) open(heatmap);
   }
+
+  // A posição do widget é relativa à camada dos ícones, que muda junto com os monitores.
+  function replaceAll() {
+    for (const [id, win] of [...windows]) {
+      windows.delete(id);
+      win.destroy();
+      reopen(id);
+    }
+  }
+
+  function scheduleReplace() {
+    clearTimeout(replaceTimer);
+    replaceTimer = setTimeout(replaceAll, REPLACE_DELAY_MS);
+  }
+
+  screen.on('display-added', scheduleReplace);
+  screen.on('display-removed', scheduleReplace);
+  screen.on('display-metrics-changed', (_event, _display, changed) => {
+    if (changed.includes('bounds') || changed.includes('scaleFactor')) scheduleReplace();
+  });
 
   return {
     openAll() {
@@ -100,6 +132,7 @@ export function createWidgets({ store, preloadPath, warn }) {
         webPreferences,
       });
       manager.setMenu(null);
+      keepPage(manager);
       manager.loadFile(MANAGER_PAGE);
       manager.on('closed', () => {
         manager = null;

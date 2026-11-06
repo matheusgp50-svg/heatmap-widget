@@ -1,6 +1,7 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, rmdirSync, writeFileSync } from 'node:fs';
+import fs, { mkdtempSync, mkdirSync, readFileSync, rmSync, rmdirSync, writeFileSync } from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { createStore } from '../../src/main/store.js';
@@ -130,6 +131,18 @@ for (const [label, content] of [
     assert.deepEqual(s.list(), []);
   });
 }
+
+test('grava no disco antes de trocar o arquivo', (t) => {
+  const s = ready();
+  const write = t.mock.method(fs, 'writeFileSync');
+  syncBuiltinESMExports();
+  t.after(() => {
+    write.mock.restore();
+    syncBuiltinESMExports();
+  });
+  s.create({ name: 'a', color: 'red' });
+  assert.equal(write.mock.calls.at(-1).arguments[2]?.flush, true);
+});
 
 test('falha ao gravar mantém o valor antigo', () => {
   const s = ready();

@@ -9,6 +9,8 @@ import { createWidgets } from './widgets.js';
 const here = dirname(fileURLToPath(import.meta.url));
 const dataDir = process.env.HEATMAP_DATA_DIR ?? join(app.getPath('appData'), 'heatmap-widgets');
 
+const EXIT_DELAY_MS = 3000;
+
 // Mantém a referência: sem ela, o coletor de lixo remove o ícone da bandeja.
 let tray = null;
 
@@ -17,6 +19,12 @@ app.setAppUserModelId('com.heatmapwidgets.app');
 
 function warn(message) {
   new Notification({ title: 'Heatmap Widgets', body: message }).show();
+}
+
+// Sem isto, um erro deixaria um processo invisível segurando a instância única.
+function failToStart() {
+  warn('Não foi possível iniciar o Heatmap Widgets.');
+  setTimeout(() => app.exit(1), EXIT_DELAY_MS);
 }
 
 function start() {
@@ -48,7 +56,7 @@ function start() {
 
 // Duas instâncias sobrescreveriam o mesmo arquivo de dados.
 if (app.requestSingleInstanceLock()) {
-  app.whenReady().then(start);
+  app.whenReady().then(start).catch(failToStart);
 } else {
   app.quit();
 }
