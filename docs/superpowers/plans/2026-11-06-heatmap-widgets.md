@@ -388,8 +388,8 @@ git commit -m "feat: adiciona armazenamento em json"
   - `index.js`: `dataDir` igual a `process.env.HEATMAP_DATA_DIR` ou a `join(app.getPath('appData'), 'heatmap-widgets')`. Chame `app.setPath('userData', dataDir)` antes de tudo.
   - `window.heatmap` no preload: `get(id)`, `list()`, `create(input)`, `update(id, patch)`, `remove(id)`, `cycleDay(id, key)`, `clearDay(id, key)`, `onChanged(callback)`
   - Canais: `heatmap:get`, `heatmap:list`, `heatmap:create`, `heatmap:update`, `heatmap:remove`, `heatmap:cycle-day`, `heatmap:clear-day`. O evento `heatmap:changed` vai a todas as janelas depois de qualquer alteração.
-  - No DOM do widget: `#title`, `#hover-info` e células `.day[data-key][data-level]`.
-  - `tests/e2e/helpers.js`: `launchApp(seed?) -> { app, dataDir, readData(), close() }`, que define `HEATMAP_DATA_DIR` em uma pasta temporária; `widgetPage(app) -> Page`.
+  - No DOM do widget: `#title`, `#hover-info` e células `.day[data-key][data-level]`. Dias futuros têm também a classe `.future`. Os tons da paleta ficam nas variáveis CSS `--level-1` a `--level-4`, definidas no `body`.
+  - `tests/e2e/helpers.js`: `launchApp(seed?: object | string, dataDir?: string) -> { app, dataDir, readData(), close() }`, que define `HEATMAP_DATA_DIR` em uma pasta temporária, ou em `dataDir` quando informado; `seed` é gravado como `data.json` (string vai sem conversão); `seedOne({ name, color = "green", days = {}, position = null }) -> object`, que monta um `data.json` válido com um heatmap; `widgetPage(app) -> Page`.
 
 - [ ] **Step 1: Escrever os testes de `placement`**
 
