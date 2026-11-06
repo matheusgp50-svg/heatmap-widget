@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
+  <title>Heatmap</title>
+  <link rel="stylesheet" href="widget.css">
+</head>
+<body>
+  <main class="card">
+    <h1 id="title"></h1>
+    <div class="calendar">
+      <div class="weekdays" aria-hidden="true">
+        <span></span><span>Seg</span><span></span><span>Qua</span><span></span><span>Sex</span><span></span>
+      </div>
+      <div class="plot">
+        <div id="months" class="months"></div>
+        <div id="grid" class="grid"></div>
+      </div>
+    </div>
+    <footer>
+      <span id="hover-info"></span>
+      <span class="legend">
+        Menos
+        <i class="swatch" data-level="0"></i>
+        <i class="swatch" data-level="1"></i>
+        <i class="swatch" data-level="2"></i>
+        <i class="swatch" data-level="3"></i>
+        <i class="swatch" data-level="4"></i>
+        Mais
+      </span>
+    </footer>
+  </main>
+  <script type="module" src="widget.js"></script>
+</body>
+</html>
