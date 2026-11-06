@@ -64,6 +64,27 @@ async function pageWithUrl(app, fragment) {
 export const widgetPage = (app) => pageWithUrl(app, 'widget.html');
 export const managerPage = (app) => pageWithUrl(app, 'manager.html');
 
+const FIRST_PLACE = { x: 40, y: 40 };
+
+function savedPosition(t) {
+  try {
+    return t.readData().heatmaps[0].position;
+  } catch {
+    return null; // o arquivo pode estar sendo trocado neste instante
+  }
+}
+
+// app.evaluate durante o SetParent derruba o Electron (só com o depurador do Playwright ligado).
+// O encaixe grava uma posição nova logo depois de fixar, e isso avisa que já é seguro.
+export async function pinnedWidget(t, unsnapped = FIRST_PLACE) {
+  const page = await widgetPage(t.app);
+  const position = await waitFor(() => {
+    const saved = savedPosition(t);
+    return saved && (saved.x !== unsnapped.x || saved.y !== unsnapped.y) && saved;
+  }, 'widget fixado');
+  return { page, position };
+}
+
 export function expectAttr(locator, name, value) {
   return waitFor(async () => (await locator.getAttribute(name)) === value, `${name}=${value}`);
 }

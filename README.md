@@ -18,7 +18,7 @@ aviso na primeira execução. Para seguir, clique em **Mais informações** e de
 | Clique esquerdo em um dia | Sobe a intensidade, em ciclo de 0 a 4 |
 | Clique direito em um dia | Limpa o dia |
 | Passar o mouse em um dia | Mostra a data e o nível no rodapé |
-| Arrastar pelo título | Move o widget |
+| Arrastar pelo título | Move o widget, que encaixa na grade dos ícones ao soltar |
 
 O ícone na bandeja do sistema tem o menu do app:
 
@@ -27,7 +27,13 @@ O ícone na bandeja do sistema tem o menu do app:
 - **Sair:** encerra o app e fecha os widgets.
 
 Os widgets ficam atrás das outras janelas e por cima dos ícones da área de trabalho.
-Para vê-los, use `Win+D`.
+Para vê-los, use `Win+D`. Eles não empurram ícones: um widget solto sobre um ícone o
+cobre.
+
+Cada widget mostra 6 meses, a partir do mês em que foi criado. Quando o quinto mês
+termina, o primeiro sai da tela a cada virada de mês. Um heatmap criado em novembro
+mostra de novembro a abril e, em abril, passa para dezembro a maio. Os dias que saem da
+tela continuam salvos.
 
 ## Dados
 

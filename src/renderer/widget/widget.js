@@ -1,7 +1,7 @@
 import { buildGrid, formatDayLabel, watchDayChange } from '../../shared/calendar.js';
 import { PALETTES } from '../../shared/palettes.js';
 
-const CELL_STEP = 13;
+const CELL_STEP = 12;
 const id = new URLSearchParams(location.search).get('id');
 const title = document.getElementById('title');
 const grid = document.getElementById('grid');
@@ -11,7 +11,7 @@ const hoverInfo = document.getElementById('hover-info');
 let heatmap = null;
 
 function renderGrid() {
-  const { weeks, months: labels } = buildGrid(new Date());
+  const { weeks, months: labels } = buildGrid(new Date(), heatmap.startMonth);
 
   months.replaceChildren(...labels.map(({ label, weekIndex }) => {
     const span = document.createElement('span');
@@ -20,11 +20,12 @@ function renderGrid() {
     return span;
   }));
 
-  grid.replaceChildren(...weeks.flat().map(({ key, isToday, isFuture }) => {
+  grid.replaceChildren(...weeks.flat().map(({ key, isToday, isFuture, isOutside }) => {
     const cell = document.createElement('div');
     cell.className = 'day';
     cell.classList.toggle('today', isToday);
     cell.classList.toggle('future', isFuture);
+    cell.classList.toggle('outside', isOutside);
     cell.dataset.key = key;
     cell.dataset.level = '0';
     return cell;
@@ -44,7 +45,9 @@ function paint() {
 async function refresh() {
   const latest = await window.heatmap.get(id);
   if (!latest) return;
+  const isFirstLoad = !heatmap;
   heatmap = latest;
+  if (isFirstLoad) renderGrid();
   paint();
 }
 
@@ -66,7 +69,7 @@ function showHover(cell) {
   }
 }
 
-const cellFrom = (event) => event.target.closest('.day');
+const cellFrom = (event) => event.target.closest('.day:not(.outside)');
 
 grid.addEventListener('click', (event) => applyLevel(cellFrom(event), window.heatmap.cycleDay));
 grid.addEventListener('contextmenu', (event) => {
@@ -86,9 +89,9 @@ window.heatmap.onChanged((change) => {
 });
 
 watchDayChange(() => {
+  if (!heatmap) return;
   renderGrid();
-  refresh();
+  paint();
 });
 
-renderGrid();
 refresh();

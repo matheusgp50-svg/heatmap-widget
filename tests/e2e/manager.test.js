@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import electronPath from 'electron';
 import { PALETTES } from '../../src/shared/palettes.js';
-import { launchApp, managerPage, seedOne, waitFor, widgetPage } from './helpers.js';
+import { launchApp, managerPage, pinnedWidget, seedOne, waitFor, widgetPage } from './helpers.js';
 
 const countWindows = (app) => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length);
 
@@ -21,7 +21,7 @@ test('sem heatmaps, o gerenciamento abre sozinho', async () => {
 
 test('com heatmaps, o gerenciamento não abre sozinho', async () => {
   const t = await launchApp(seedOne());
-  await widgetPage(t.app);
+  await pinnedWidget(t);
   assert.equal(await countWindows(t.app), 1);
   await t.close();
 });
@@ -54,7 +54,7 @@ test('nome vazio mostra erro e não cria nada', async () => {
 
 test('renomear e trocar a cor atualizam o widget aberto', async () => {
   const t = await launchApp(seedOne());
-  const widget = await widgetPage(t.app);
+  const { page: widget } = await pinnedWidget(t);
   const page = await openManager(t);
   await page.fill('.rename', 'Corrida');
   await page.press('.rename', 'Enter');
@@ -72,7 +72,7 @@ test('renomear e trocar a cor atualizam o widget aberto', async () => {
 
 test('excluir pede confirmação; cancelar mantém', async () => {
   const t = await launchApp(seedOne());
-  await widgetPage(t.app);
+  await pinnedWidget(t);
   const page = await openManager(t);
   const messages = [];
 
@@ -92,7 +92,7 @@ test('excluir pede confirmação; cancelar mantém', async () => {
 
 test('nome com HTML aparece literalmente na lista', async () => {
   const t = await launchApp(seedOne({ name: '<b>x</b>' }));
-  await widgetPage(t.app);
+  await pinnedWidget(t);
   const page = await openManager(t);
   await waitFor(async () => (await page.inputValue('.rename')) === '<b>x</b>', 'nome');
   assert.equal(await page.locator('.heatmap-row b').count(), 0);
@@ -101,7 +101,7 @@ test('nome com HTML aparece literalmente na lista', async () => {
 
 test('segunda instância encerra e abre o gerenciamento da primeira', async () => {
   const t = await launchApp(seedOne());
-  await widgetPage(t.app);
+  await pinnedWidget(t);
   const opened = t.app.waitForEvent('window');
   const env = { ...process.env, HEATMAP_DATA_DIR: t.dataDir };
   delete env.ELECTRON_RUN_AS_NODE;

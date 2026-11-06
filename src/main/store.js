@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { MAX_LEVEL, isDateKey, nextLevel } from '../shared/calendar.js';
+import { MAX_LEVEL, isDateKey, isMonthKey, nextLevel, toMonthKey } from '../shared/calendar.js';
 import { COLORS } from '../shared/palettes.js';
 
 const VERSION = 1;
@@ -35,10 +35,11 @@ function isPosition(value) {
 
 function isHeatmap(value) {
   if (typeof value !== 'object' || value === null) return false;
-  const { id, name, color, position, days } = value;
+  const { id, name, color, position, days, startMonth } = value;
   if (typeof id !== 'string' || !id || !COLORS.includes(color) || !isPosition(position)) return false;
   if (typeof name !== 'string' || !name.trim() || name.trim().length > MAX_NAME) return false;
   if (typeof days !== 'object' || days === null || Array.isArray(days)) return false;
+  if (startMonth !== undefined && !isMonthKey(startMonth)) return false;
   return Object.entries(days).every(
     ([key, level]) => isDateKey(key) && Number.isInteger(level) && level >= 1 && level <= MAX_LEVEL,
   );
@@ -98,7 +99,7 @@ export function createStore(filePath) {
   }
 
   return {
-    load() {
+    load(now = new Date()) {
       mkdirSync(dirname(filePath), { recursive: true });
       if (!existsSync(filePath)) {
         save({ version: VERSION, heatmaps: [] });
@@ -107,13 +108,18 @@ export function createStore(filePath) {
       const text = readFileSync(filePath, 'utf8');
       try {
         data = parseData(text);
-        return { status: 'ok' };
       } catch {
         const corruptPath = join(dirname(filePath), `data.corrupt-${Date.now()}.json`);
         replaceFile(filePath, corruptPath);
         save({ version: VERSION, heatmaps: [] });
         return { status: 'recovered', corruptPath };
       }
+      // Arquivos antigos não têm o campo, e a versão continua 1 para não serem tratados como corrompidos.
+      if (data.heatmaps.some((heatmap) => !heatmap.startMonth)) {
+        const startMonth = toMonthKey(now);
+        save({ ...data, heatmaps: data.heatmaps.map((heatmap) => ({ startMonth, ...heatmap })) });
+      }
+      return { status: 'ok' };
     },
 
     list: () => structuredClone(data.heatmaps),
@@ -123,12 +129,13 @@ export function createStore(filePath) {
       return heatmap && structuredClone(heatmap);
     },
 
-    create({ name, color }) {
+    create({ name, color }, startMonth = toMonthKey(new Date())) {
       const heatmap = {
         id: randomUUID(),
         name: cleanName(name),
         color: checkColor(color),
         position: null,
+        startMonth,
         days: {},
       };
       const next = structuredClone(data);

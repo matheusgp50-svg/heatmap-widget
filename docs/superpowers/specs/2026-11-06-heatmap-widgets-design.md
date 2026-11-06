@@ -28,7 +28,7 @@ intensidade de cada dia com cliques direto no widget.
 | Tema | Decisão |
 |---|---|
 | Tipo de heatmap | Calendário: cada quadrado é um dia |
-| Período exibido | Últimas 53 semanas, terminando na semana atual |
+| Período exibido | 6 meses a partir do mês de criação; depois anda um mês por vez, com 4 meses antes do atual e 1 depois |
 | Marcação | Clique esquerdo sobe um nível, em ciclo: 0→1→2→3→4→0 |
 | Limpar um dia | Clique direito leva o dia ao nível 0 |
 | Comportamento na área de trabalho | Fixo no fundo, atrás das outras janelas |
@@ -94,7 +94,7 @@ Arquivo: `%APPDATA%/heatmap-widgets/data.json`
 ### Visual
 
 - Nome do tema no topo.
-- Grade de 53 semanas × 7 dias, com cerca de 720×150 px.
+- Grade de 6 meses (até 28 semanas × 7 dias), com 380×160 px, ou 5×2 posições de ícone.
 - Rótulos dos meses acima da grade.
 - Legenda "Menos → Mais" abaixo da grade.
 - O dia de hoje tem destaque visual.
@@ -109,7 +109,7 @@ Arquivo: `%APPDATA%/heatmap-widgets/data.json`
 | Clique direito em um dia | Limpa o dia |
 | Passar o mouse em um dia | Mostra a data e o nível |
 | Clique em um dia futuro | Nada acontece |
-| Arrastar pelo título | Move o widget e salva a posição ao soltar |
+| Arrastar pelo título | Move o widget, encaixa na posição livre mais próxima da grade dos ícones e salva ao soltar |
 
 Dias passados podem ser editados. À meia-noite, a grade se atualiza sozinha para
 incluir o novo dia.

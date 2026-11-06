@@ -52,6 +52,28 @@ test('aceita arquivo com BOM', () => {
   assert.equal(s.get('a').days['2026-11-06'], 2);
 });
 
+test('heatmap novo guarda o mês de criação', () => {
+  const s = ready();
+  assert.equal(s.create({ name: 'a', color: 'red' }, '2026-11').startMonth, '2026-11');
+});
+
+test('load dá o mês atual a heatmap antigo e grava', () => {
+  writeFileSync(file, JSON.stringify(withDay('2026-11-06', 2)));
+  const s = createStore(file);
+  assert.equal(s.load(new Date(2026, 10, 6)).status, 'ok');
+  assert.equal(s.get('a').startMonth, '2026-11');
+  assert.equal(JSON.parse(readFileSync(file, 'utf8')).heatmaps[0].startMonth, '2026-11');
+});
+
+test('load mantém o mês inicial já salvo', () => {
+  const data = withDay('2026-11-06', 2);
+  data.heatmaps[0].startMonth = '2026-08';
+  writeFileSync(file, JSON.stringify(data));
+  const s = createStore(file);
+  s.load(new Date(2026, 10, 6));
+  assert.equal(s.get('a').startMonth, '2026-08');
+});
+
 test('valida nome e cor', () => {
   const s = ready();
   assert.equal(s.create({ name: 'x'.repeat(40), color: 'red' }).name.length, 40);
@@ -120,6 +142,7 @@ for (const [label, content] of [
   ['versão desconhecida', '{"version":2,"heatmaps":[]}'],
   ['nível inválido', JSON.stringify(withDay('2026-11-06', 9))],
   ['data inválida', JSON.stringify(withDay('2026-02-30', 1))],
+  ['mês inicial inválido', JSON.stringify({ version: 1, heatmaps: [{ ...withDay('2026-11-06', 1).heatmaps[0], startMonth: '2026-13' }] })],
 ]) {
   test(`recupera de ${label} sem perder o original`, () => {
     writeFileSync(file, content);

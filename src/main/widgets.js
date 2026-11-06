@@ -1,8 +1,8 @@
 import { BrowserWindow, screen } from 'electron';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { pinToDesktop } from './desktop-pin.js';
-import { WIDGET_SIZE, resolvePosition } from './placement.js';
+import { moveOnDesktop, pinToDesktop, readDesktopGrid } from './desktop-pin.js';
+import { WIDGET_SIZE, resolvePosition, snapToGrid } from './placement.js';
 import { retryUntilOk } from './retry.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -48,6 +48,26 @@ export function createWidgets({ store, preloadPath, warn }) {
     }
   }
 
+  // A grade do Windows é em pixels físicos, e o Electron trabalha em pixels lógicos.
+  function physicalRect(win) {
+    return screen.dipToScreenRect(win, win.getBounds());
+  }
+
+  function snap(win) {
+    const grid = readDesktopGrid();
+    if (!grid.ok) return;
+    const rect = physicalRect(win);
+    const { workArea } = screen.getDisplayMatching(win.getBounds());
+    const occupied = [...windows.values()].filter((other) => other !== win).map(physicalRect);
+    const spot = snapToGrid({ rect, grid, area: screen.dipToScreenRect(null, workArea), occupied });
+    if (spot.x !== rect.x || spot.y !== rect.y) moveOnDesktop(win, spot);
+  }
+
+  function settle(id, win) {
+    snap(win);
+    savePosition(id, win);
+  }
+
   function open(heatmap) {
     const win = new BrowserWindow({
       ...WIDGET_SIZE,
@@ -69,8 +89,9 @@ export function createWidgets({ store, preloadPath, warn }) {
       // Depois de reiniciar, o Explorer leva alguns segundos para recriar a camada dos ícones.
       const { ok } = await retryUntilOk(() => (win.isDestroyed() ? { ok: true } : pinToDesktop(win)), PIN_RETRY);
       if (!ok) warn('Não foi possível fixar o widget no fundo.');
+      else if (!win.isDestroyed()) settle(heatmap.id, win);
     });
-    win.on('moved', () => savePosition(heatmap.id, win));
+    win.on('moved', () => settle(heatmap.id, win));
     win.on('close', (event) => {
       // Alt+F4 não deve sumir com o widget.
       if (!closeAllowed && windows.get(heatmap.id) === win) event.preventDefault();

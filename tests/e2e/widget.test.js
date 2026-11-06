@@ -6,10 +6,11 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import electronPath from 'electron';
-import { formatDayLabel, toDateKey } from '../../src/shared/calendar.js';
-import { expectAttr, launchApp, seedOne, waitFor, widgetPage } from './helpers.js';
+import { formatDayLabel, toDateKey, toMonthKey } from '../../src/shared/calendar.js';
+import { expectAttr, launchApp, pinnedWidget, seedOne, waitFor, widgetPage } from './helpers.js';
 
 const todayCell = (page) => page.locator(`.day[data-key="${toDateKey(new Date())}"]`);
+const windowPosition = (app) => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getPosition());
 
 test('clique sobe o nível e grava; clique direito limpa', async () => {
   const t = await launchApp(seedOne());
@@ -36,11 +37,7 @@ test('seis cliques rápidos terminam no nível 1', async () => {
   await t.close();
 });
 
-test('dia futuro não reage ao clique', async (context) => {
-  if (new Date().getDay() === 6) {
-    context.skip('no sábado a última semana não tem dia futuro');
-    return;
-  }
+test('dia futuro não reage ao clique', async () => {
   const t = await launchApp(seedOne());
   const page = await widgetPage(t.app);
   const cell = page.locator('.day.future').first();
@@ -72,17 +69,78 @@ test('nome com HTML aparece literalmente', async () => {
 
 test('dados e posição voltam depois de reiniciar', async () => {
   const today = toDateKey(new Date());
-  const seed = seedOne({ days: { [today]: 3 }, position: { x: 200, y: 120 } });
-  const first = await launchApp(seed);
-  await widgetPage(first.app);
+  const start = { x: 200, y: 120 };
+  const first = await launchApp(seedOne({ days: { [today]: 3 }, position: start }));
+  const { position } = await pinnedWidget(first, start);
   await first.close({ keepData: true });
 
   const second = await launchApp(undefined, first.dataDir);
   const page = await widgetPage(second.app);
   await expectAttr(todayCell(page), 'data-level', '3');
-  const position = await second.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getPosition());
-  assert.deepEqual(position, [200, 120]);
+  await waitFor(
+    () => page.evaluate(({ x, y }) => screenX === x && screenY === y, position),
+    'widget na posição salva',
+  );
   await second.close();
+});
+
+test('o widget cabe no tamanho reduzido sem cortar a grade', async () => {
+  const t = await launchApp(seedOne());
+  const { page } = await pinnedWidget(t);
+  await page.locator('.day').first().waitFor();
+  const [width] = await t.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getSize());
+  assert.equal(width, 380);
+  const overflow = await page.evaluate(() => {
+    const card = document.querySelector('.card');
+    return [card.scrollWidth - card.clientWidth, card.scrollHeight - card.clientHeight];
+  });
+  assert.deepEqual(overflow, [0, 0]);
+  await t.close();
+});
+
+test('heatmap antigo ganha o mês atual e mostra só seis meses', async () => {
+  const t = await launchApp(seedOne());
+  const page = await widgetPage(t.app);
+  await page.locator('.day').first().waitFor();
+  assert.equal(t.readData().heatmaps[0].startMonth, toMonthKey(new Date()));
+  assert.equal(await page.locator('#months span').count(), 6);
+  await t.close();
+});
+
+test('dia fora dos seis meses não reage ao mouse', async (context) => {
+  const seed = seedOne();
+  seed.heatmaps[0].startMonth = toMonthKey(new Date());
+  const t = await launchApp(seed);
+  const page = await widgetPage(t.app);
+  await page.locator('.day').first().waitFor();
+  const cell = page.locator('.day.outside').first();
+  if (await cell.count() === 0) {
+    context.skip('esta janela de seis meses preenche todas as semanas');
+    await t.close();
+    return;
+  }
+  await cell.click({ force: true });
+  await todayCell(page).click();
+  await expectAttr(todayCell(page), 'data-level', '1');
+  assert.equal(Object.keys(t.readData().heatmaps[0].days).length, 1);
+  await t.close();
+});
+
+test('soltar fora da grade volta para a posição encaixada e grava', async () => {
+  const start = { x: 230, y: 310 };
+  const t = await launchApp(seedOne({ position: start }));
+  const { position: { x, y } } = await pinnedWidget(t, start);
+  await t.app.evaluate(({ BrowserWindow }, target) => {
+    const [win] = BrowserWindow.getAllWindows();
+    win.setPosition(target.x, target.y);
+    win.emit('moved');
+  }, { x: x + 20, y: y + 20 });
+  await waitFor(async () => {
+    const [nowX, nowY] = await windowPosition(t.app);
+    return nowX === x && nowY === y;
+  }, 'widget de volta à grade');
+  assert.deepEqual(t.readData().heatmaps[0].position, { x, y });
+  await t.close();
 });
 
 test('dados corrompidos abrem vazio e guardam backup', async () => {
@@ -106,8 +164,9 @@ test('o widget não sai da própria página', async () => {
 });
 
 test('mudança de monitores recoloca os widgets', async () => {
-  const t = await launchApp(seedOne({ position: { x: 200, y: 120 } }));
-  await widgetPage(t.app);
+  const start = { x: 200, y: 120 };
+  const t = await launchApp(seedOne({ position: start }));
+  await pinnedWidget(t, start);
   const windowId = () => t.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.id);
   const before = await windowId();
   await t.app.evaluate(({ screen }) => screen.emit('display-removed'));
@@ -133,7 +192,7 @@ test('falha ao iniciar encerra o app em vez de ficar invisível', async () => {
 
 test('widget destruído por fora é reaberto', async () => {
   const t = await launchApp(seedOne());
-  await widgetPage(t.app);
+  await pinnedWidget(t);
   await t.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].destroy());
   await waitFor(
     () => t.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length === 1),
