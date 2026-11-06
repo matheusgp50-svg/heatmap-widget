@@ -1,0 +1,21 @@
+{
+  "name": "heatmap-widgets",
+  "productName": "Heatmap Widgets",
+  "version": "0.1.0",
+  "description": "Heatmaps de calendario fixos na area de trabalho do Windows",
+  "type": "module",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test \"tests/unit/**/*.test.js\"",
+    "test:e2e": "node --test --test-concurrency=1 \"tests/e2e/**/*.test.js\""
+  },
+  "dependencies": {
+    "koffi": "^3.3.7"
+  },
+  "devDependencies": {
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0",
+    "playwright": "^1.65.0"
+  }
+}

@@ -181,3 +181,24 @@ técnica atender aos três pontos, o projeto para e o usuário decide como segui
 Um instalador `.exe` gerado com `electron-builder`. O instalador não terá
 assinatura digital, então o Windows SmartScreen pode mostrar um aviso na
 primeira execução.
+
+## Resultado do teste de fixar no fundo
+
+Testado em 2026-11-06, no Windows 11 26200, com Electron 45, usando `Win+D` e
+cliques enviados ao sistema, medindo a janela sob o ponto e a cor do pixel.
+
+| Técnica | Visível após `Win+D` | Recebe clique | Fica atrás de outras janelas |
+|---|---|---|---|
+| A: `SetWindowPos(HWND_BOTTOM)` | Não | Não | Não |
+| B: filha da `WorkerW` | Sim | Não, fica atrás dos ícones | Não testado |
+| C: filha da `SHELLDLL_DefView` | Sim | Sim | Sim |
+| D: subir quando a área de trabalho tem o foco | Sim | Sim | Não |
+
+**Escolhida: técnica C.** A janela vira filha da camada dos ícones.
+
+- Funciona com `transparent: true` e não exige opções extras de janela.
+- O widget fica por cima dos ícones que estiverem no mesmo lugar.
+- A posição de uma janela filha é relativa à janela pai, então `pinToDesktop`
+  converte as coordenadas depois de `SetParent`.
+- Reiniciar o `explorer.exe` destrói a janela pai, e com ela o widget. O app
+  precisa reabrir os widgets quando isso acontecer.
