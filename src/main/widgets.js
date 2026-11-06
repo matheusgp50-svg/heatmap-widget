@@ -6,10 +6,13 @@ import { WIDGET_SIZE, resolvePosition } from './placement.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const WIDGET_PAGE = join(here, '..', 'renderer', 'widget', 'widget.html');
+const MANAGER_PAGE = join(here, '..', 'renderer', 'manager', 'manager.html');
+const MANAGER_SIZE = { width: 520, height: 520 };
 const REOPEN_DELAY_MS = 3000;
 
 export function createWidgets({ store, preloadPath, warn }) {
   const windows = new Map();
+  let manager = null;
   let closeAllowed = false;
 
   const webPreferences = { preload: preloadPath, contextIsolation: true, nodeIntegration: false };
@@ -82,6 +85,25 @@ export function createWidgets({ store, preloadPath, warn }) {
       const win = windows.get(id);
       windows.delete(id);
       win?.close();
+    },
+    openManager() {
+      if (manager) {
+        manager.show();
+        manager.focus();
+        return;
+      }
+      manager = new BrowserWindow({
+        ...MANAGER_SIZE,
+        title: 'Gerenciar heatmaps',
+        autoHideMenuBar: true,
+        backgroundColor: '#15171c',
+        webPreferences,
+      });
+      manager.setMenu(null);
+      manager.loadFile(MANAGER_PAGE);
+      manager.on('closed', () => {
+        manager = null;
+      });
     },
     broadcast(channel, payload) {
       BrowserWindow.getAllWindows().forEach((win) => win.webContents.send(channel, payload));

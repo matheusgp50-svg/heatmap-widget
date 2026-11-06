@@ -1,0 +1,59 @@
+:root { color-scheme: dark; }
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 20px;
+  background: #15171c;
+  color: #e6e8ec;
+  font: 14px/1.4 "Segoe UI", system-ui, sans-serif;
+}
+
+h1 {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+form, .heatmap-row {
+  display: flex;
+  gap: 8px;
+}
+
+input, select, button {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #343843;
+  border-radius: 6px;
+  background: #1e2128;
+  color: inherit;
+  font: inherit;
+}
+
+input { flex: 1; min-width: 0; }
+
+button { cursor: pointer; }
+
+#create {
+  border-color: #16a34a;
+  background: #15803d;
+  font-weight: 600;
+}
+
+.delete:hover { border-color: #ef4444; }
+
+#error {
+  margin: 8px 0 0;
+  color: #fca5a5;
+}
+
+#list {
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+
+#empty { color: #9aa1ad; }

@@ -19,6 +19,22 @@ export function registerIpc({ store, widgets, warn }) {
   ipcMain.handle('heatmap:get', (_event, id) => store.get(id));
   ipcMain.handle('heatmap:list', () => store.list());
 
+  handleChange('heatmap:create', (input) => {
+    const { id } = store.create(input);
+    widgets.open(store.get(id));
+    changed(id);
+    return store.get(id);
+  });
+  handleChange('heatmap:update', (id, patch) => {
+    const heatmap = store.update(id, patch);
+    changed(id);
+    return heatmap;
+  });
+  handleChange('heatmap:remove', (id) => {
+    store.remove(id);
+    widgets.close(id);
+    changed(id);
+  });
   handleChange('heatmap:cycle-day', (id, key) => {
     const level = store.cycleDay(id, key, toDateKey(new Date()));
     changed(id);

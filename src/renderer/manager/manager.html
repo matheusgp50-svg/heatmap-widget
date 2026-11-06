@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
+  <title>Gerenciar heatmaps</title>
+  <link rel="stylesheet" href="manager.css">
+</head>
+<body>
+  <h1>Heatmaps</h1>
+  <form id="create-form">
+    <input id="new-name" type="text" maxlength="40" placeholder="Tema, ex.: Treino" aria-label="Nome do tema" autofocus>
+    <select id="new-color" aria-label="Cor"></select>
+    <button id="create" type="submit">Criar</button>
+  </form>
+  <p id="error" hidden></p>
+  <ul id="list"></ul>
+  <p id="empty" hidden>Crie o primeiro heatmap para vê-lo na área de trabalho.</p>
+  <script type="module" src="manager.js"></script>
+</body>
+</html>
