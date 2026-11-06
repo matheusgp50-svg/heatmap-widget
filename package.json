@@ -8,7 +8,8 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test \"tests/unit/**/*.test.js\"",
-    "test:e2e": "node --test --test-concurrency=1 \"tests/e2e/**/*.test.js\""
+    "test:e2e": "node --test --test-concurrency=1 \"tests/e2e/**/*.test.js\"",
+    "dist": "electron-builder --win nsis"
   },
   "dependencies": {
     "koffi": "^3.3.7"
@@ -17,5 +18,24 @@
     "electron": "^45.2.3",
     "electron-builder": "^26.18.0",
     "playwright": "^1.65.0"
-  }
+  },
+  "build": {
+    "appId": "com.heatmapwidgets.app",
+    "files": [
+      "src/**",
+      "assets/**",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/koffi/**",
+      "node_modules/@koromix/**"
+    ],
+    "win": {
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": true
+    }
+  },
+  "author": "matheuspd2010"
 }
