@@ -1,55 +1,48 @@
 # Heatmap Widgets
 
-Heatmaps de calendário fixos na área de trabalho do Windows 11. Crie um tema, como
-Treino ou Estudo, e marque a intensidade de cada dia com um clique direto no widget.
+Calendar heatmaps pinned to your Windows 11 desktop. Create a theme, such as **Workout** or **Study**, and track each day's intensity with a single click directly on the widget.
 
-## Instalação
+## Installation
 
-Rode `dist/Heatmap Widgets Setup 0.1.0.exe`.
+Run `dist/Heatmap Widgets Setup 0.1.0.exe`.
 
-O instalador não tem assinatura digital, então o Windows SmartScreen pode mostrar um
-aviso na primeira execução. Para seguir, clique em **Mais informações** e depois em
-**Executar assim mesmo**.
+The installer is not digitally signed, so Windows SmartScreen may display a warning the first time you run it. To proceed, click **More info** and then **Run anyway**.
 
-## Como usar
+## How to Use
 
-| Ação | Resultado |
+| Action | Result |
 |---|---|
-| Clique esquerdo em um dia | Sobe a intensidade, em ciclo de 0 a 4 |
-| Clique direito em um dia | Limpa o dia |
-| Passar o mouse em um dia | Mostra a data e o nível no rodapé |
-| Arrastar pelo título | Move o widget, que encaixa na grade dos ícones ao soltar |
+| Left-click a day | Increases its intensity, cycling from 0 to 4 |
+| Right-click a day | Clears the day |
+| Hover over a day | Displays the date and intensity level in the footer |
+| Drag the title bar | Moves the widget, snapping it to the desktop icon grid when released |
 
-O ícone na bandeja do sistema tem o menu do app:
+The system tray icon provides access to the app menu:
 
-- **Gerenciar heatmaps:** cria, renomeia, troca a cor e exclui temas.
-- **Iniciar com o Windows:** vem ligado por padrão.
-- **Sair:** encerra o app e fecha os widgets.
+- **Manage Heatmaps:** Create, rename, change the color of, and delete themes.
+- **Start with Windows:** Enabled by default.
+- **Quit:** Exits the app and closes all widgets.
 
-Os widgets ficam atrás das outras janelas e por cima dos ícones da área de trabalho.
-Para vê-los, use `Win+D`. Eles não empurram ícones: um widget solto sobre um ícone o
-cobre.
+Widgets stay behind other windows but above desktop icons. To see them, press `Win+D`. They do not rearrange desktop icons: a widget placed over an icon will cover it.
 
-Cada widget mostra 6 meses, a partir do mês em que foi criado. Quando o quinto mês
-termina, o primeiro sai da tela a cada virada de mês. Um heatmap criado em novembro
-mostra de novembro a abril e, em abril, passa para dezembro a maio. Os dias que saem da
-tela continuam salvos.
+Each widget displays 6 months, starting from the month it was created. Once the fifth month ends, the first month disappears from view at each new month. For example, a heatmap created in November displays November through April. In April, it shifts forward to December through May. Days that disappear from view remain saved.
 
-## Dados
+## Data Storage
 
-Tudo fica em `%APPDATA%\heatmap-widgets\data.json`, só no seu PC. Se o arquivo estiver
-corrompido, o app guarda uma cópia como `data.corrupt-<número>.json`, na mesma pasta, e
-inicia vazio.
+All data is stored locally on your PC at:
 
-## Desenvolvimento
+`%APPDATA%\heatmap-widgets\data.json`
+
+If the file becomes corrupted, the app saves a backup as `data.corrupt-<number>.json` in the same folder and starts with an empty dataset.
+
+## Development
 
 ```bash
 npm install
-npm start           # roda o app
-npm test            # testes unitários
-npm run test:e2e    # testes de ponta a ponta
-npm run dist        # gera o instalador em dist/
+npm start           # Run the app
+npm test            # Run unit tests
+npm run test:e2e    # Run end-to-end tests
+npm run dist        # Build the installer in dist/
 ```
 
-Os testes de ponta a ponta abrem widgets de verdade na área de trabalho por alguns
-segundos. Eles usam uma pasta temporária e não tocam nos seus dados.
+End-to-end tests open actual widgets on the desktop for a few seconds. They use a temporary directory and do not modify your data.
